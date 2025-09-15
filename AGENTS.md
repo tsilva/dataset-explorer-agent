@@ -22,12 +22,11 @@ Read this before starting any task, and update `internals.md` after every task.
 
 ## Common Tasks
 
-- Adding a dataset: create `datasets/<NAME>/`, add files, then author `SCHEMA.md` and `SCHEMA.json`. Document the dataset in `internals.md`.
+- Adding a dataset: create `datasets/<NAME>/`, add files, then author `derived/<NAME>/SCHEMA.md` and `derived/<NAME>/SCHEMA.json`. Document the dataset in `internals.md`.
 - Updating a schema: adjust both `SCHEMA.md` and `SCHEMA.json`, and summarize the changes in `internals.md`.
 - Generating DDL or validators: prefer deriving from `SCHEMA.json`.
 
 ## Pointers
 
 - Dataset overview and conventions: `internals.md`
-- Example schema: `datasets/MIMIC_5.3/SCHEMA.md` and `datasets/MIMIC_5.3/SCHEMA.json`
-
+- Example schema: `derived/MIMIC_5.3/SCHEMA.md` and `derived/MIMIC_5.3/SCHEMA.json`

@@ -6,6 +6,12 @@ Last updated: 2025-09-15
 
 ## Updates (2025-09-15)
 
+- Repo structure: separate raw vs. inferred assets
+  - Moved schema files from `datasets/MIMIC_5.3/` to `derived/MIMIC_5.3/`.
+  - New convention: all inferred/generated metadata (e.g., `SCHEMA.md`, `SCHEMA.json`) lives under `derived/<DATASET_NAME>/`.
+  - Raw data remains in `datasets/<DATASET_NAME>/`.
+  - Migration note: update any scripts that resolved `datasets/<NAME>/SCHEMA.json` to instead use `derived/<NAME>/SCHEMA.json` (or pass the full path explicitly).
+
 - MIMIC_5.3 schema tuning — regex patterns
   - Updated `datasets/MIMIC_5.3/SCHEMA.json` to add a `pattern` on every column. For numeric/date types we applied standard patterns; for string columns we inferred patterns from actual CSV values to cover ≥99% of non-empty entries (sampling up to 200k rows per table).
   - Examples:
@@ -34,8 +40,8 @@ Last updated: 2025-09-15
   - Path: `datasets/MIMIC_5.3/`
   - Format: CSV files in OMOP CDM v5.3 layout (de‑identified). Dates are shifted; identifiers are 64‑bit integers.
   - Schema files:
-    - Human-readable: `datasets/MIMIC_5.3/SCHEMA.md`
-    - Machine-readable: `datasets/MIMIC_5.3/SCHEMA.json`
+    - Human-readable: `derived/MIMIC_5.3/SCHEMA.md`
+    - Machine-readable: `derived/MIMIC_5.3/SCHEMA.json`
   - Contents include core OMOP tables such as `person`, `visit_occurrence`, `condition_occurrence`, `drug_exposure`, `measurement`, `observation`, `specimen`, `note`, `note_nlp`, eras (`condition_era`, `drug_era`, `dose_era`), vocabulary (`concept`, `concept_relationship`, `vocabulary`), and admin tables (`provider`, `care_site`, `location`, `cdm_source`, `metadata`, cohorts, etc.).
 
 ## MCP Servers
@@ -59,7 +65,7 @@ Last updated: 2025-09-15
 
 ## Where The Schema Lives
 
-- Each dataset folder should contain a pair of schema files:
+- Each dataset has a matching subfolder in `derived/<DATASET_NAME>/` containing the schema files:
   - `SCHEMA.md`: data dictionary with table descriptions, per‑column fields, types, and key relationships.
   - `SCHEMA.json`: structured schema with `tables[]`, each listing `columns`, `primaryKey`, and `foreignKeys`.
 - These two files are the source of truth for documentation and automation (DDL generation, integrity checks, loaders).
@@ -74,15 +80,15 @@ Last updated: 2025-09-15
 
 ## How To Use The Schema
 
-- Human readers: Start with `SCHEMA.md` for each dataset; it provides context and definitions.
-- Automation: Consume `SCHEMA.json` to generate DDL, build loaders, or run integrity checks.
+- Human readers: Start with `derived/<NAME>/SCHEMA.md` for each dataset; it provides context and definitions.
+- Automation: Consume `derived/<NAME>/SCHEMA.json` to generate DDL, build loaders, or run integrity checks.
   - Example consumers: ad‑hoc scripts to emit Postgres/BigQuery DDL; data validation scripts to verify FK integrity.
 
 ## Typical Agent Tasks
 
 1) Add a new dataset
 - Create `datasets/<NAME>/` and place raw files (CSV/Parquet).
-- Create `SCHEMA.md` and `SCHEMA.json` in that folder mirroring the actual columns and relationships.
+- Create `derived/<NAME>/SCHEMA.md` and `derived/<NAME>/SCHEMA.json` mirroring the actual columns and relationships.
 - Document the dataset in this `internals.md` under “Dataset Inventory”.
 
 2) Update an existing dataset or schema
@@ -104,13 +110,15 @@ Last updated: 2025-09-15
 ```
 datasets/
   MIMIC_5.3/
-    *.csv           # OMOP CDM tables
-    SCHEMA.md       # Human data dictionary
-    SCHEMA.json     # Machine schema (tables, columns, PK/FK)
+    *.csv              # OMOP CDM tables (raw)
+derived/
+  MIMIC_5.3/
+    SCHEMA.md          # Human data dictionary (inferred)
+    SCHEMA.json        # Machine schema (tables, columns, PK/FK)
 servers/
   schema_validator_mcp/
-    server.py       # MCP server (stdio)
-    README.md       # Usage and tool docs
+    server.py          # MCP server (stdio)
+    README.md          # Usage and tool docs
 ```
 
 ## Notes & Caveats
