@@ -22,17 +22,33 @@ Last updated: 2025-09-15
   - Scope: 313 columns now include a `pattern`. No headers, types, PK/FK changed.
   - Notes: The current MCP validator (`validate_column`) enforces `type` only. If needed, we can extend it to also check `pattern`.
 
-- New script: Pattern hit-rate validator
-  - Path: `servers/schema_validator_mcp/verify_patterns.py`
+- Regex warnings — fix incorrect hyphen/backslash escaping
+  - Root cause: several character classes in `derived/MIMIC_5.3/SCHEMA.json` encoded a literal backslash immediately before `-` as `\\-` (after JSON escaping `\\\\-`), which the Python `re` engine interpreted as a range (e.g., `\-/`) — yielding “bad character range” warnings and skipping those patterns.
+  - Fix: normalize affected classes by (a) moving `-` to the end of the class (or escaping it with a single backslash) and (b) using a single backslash in the regex (encoded as `\\` in JSON) for the literal `\` character. Also replaced nested `[\\]` fragments with explicit `\[\]` where square brackets are allowed.
+  - Updated columns (patterns only):
+    - `visit_occurrence.visit_source_value`, `visit_occurrence.admitting_source_value`
+    - `visit_detail.visit_detail_source_value`, `visit_detail.admitting_source_value`
+    - `drug_exposure.drug_source_value`
+    - `measurement.unit_source_value`, `measurement.value_source_value`
+    - `observation.value_as_string`
+    - `cdm_source.source_description`, `cdm_source.source_documentation_reference`, `cdm_source.vocabulary_version`
+    - `concept.concept_name`, `concept.concept_code`
+  - Result: `scripts/verify_patterns.py MIMIC_5.3` now emits no regex warnings; hit-rates for the above columns are 100% (or >99.99%) on the sample.
+
+- New script: Pattern hit-rate validator (standalone)
+  - Path: `scripts/verify_patterns.py`
   - Purpose: Scans all CSVs and computes, for every column with a `pattern` in `SCHEMA.json`, how many non-empty values match vs. do not match, yielding a hit rate per column.
   - Usage:
-    - `python servers/schema_validator_mcp/verify_patterns.py --dataset datasets/MIMIC_5.3 --schema SCHEMA.json --format tsv`
-    - Options:
-      - `--strict-nulls`: treat `NULL/NA/NAN/NONE` (case-insensitive) as NULL and ignore.
-      - `--format tsv|json`: output format (default tsv).
-      - `--max-examples N`: number of example mismatched values to retain per column (default 10).
-  - Output columns (tsv): `table`, `column`, `hit_rate`, `total_non_empty`, `matches`, `mismatches`, `pattern`.
+    - `python scripts/verify_patterns.py MIMIC_5.3`
+    - Optional overrides:
+      - `--schema derived/MIMIC_5.3/SCHEMA.json`
+      - `--dataset-path datasets/MIMIC_5.3`
+      - Options:
+        - `--strict-nulls`: treat `NULL/NA/NAN/NONE` (case-insensitive) as NULL and ignore.
+        - `--format tsv|json`: output format (default tsv).
+  - Output columns (tsv): `dataset`, `table`, `column`, `total_non_empty`, `matches`, `mismatches`, `hit_rate`, `pattern`.
   - Notes: Processes entire files row-by-row; running on large tables (e.g., `measurement.csv`) is compute-intensive.
+  - Implementation note: Minimal invocation auto-resolves `derived/MIMIC_5.3/SCHEMA.json` and `datasets/MIMIC_5.3`.
 
 ## Dataset Inventory
 
