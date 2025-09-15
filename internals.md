@@ -35,6 +35,16 @@ Last updated: 2025-09-15
     - `concept.concept_name`, `concept.concept_code`
   - Result: `scripts/verify_patterns.py MIMIC_5.3` now emits no regex warnings; hit-rates for the above columns are 100% (or >99.99%) on the sample.
 
+- Pattern audit — zero hit rate fix
+  - Input: `audit.csv` at repo root (CSV export of the validator results).
+  - Finding: Only one column had non-empty values with 0.0 hit rate: `measurement.measurement_source_value`.
+  - Root cause: Character class included `[` and `]` but `]` wasn’t escaped/positioned safely, effectively breaking the class.
+  - Fix in `derived/MIMIC_5.3/SCHEMA.json`:
+    - `measurement.measurement_source_value`: `^[A-Za-z0-9 %()\[\]/|]+$` — allows digits, letters, space, `%`, `(`, `)`, `/`, `[`, `]`, and `|`.
+  - Validation: Re-ran `scripts/verify_patterns.py MIMIC_5.3` → hit_rate now 1.000000 for this column.
+
+- Repo docs: Added `README.md` at repo root with quick-start instructions for running `scripts/verify_patterns.py`, options (`--format tsv|csv|json`, `--strict-nulls`, path overrides), and hit-rate semantics (zero non-empty treated as 1.0).
+
 - New script: Pattern hit-rate validator (standalone)
   - Path: `scripts/verify_patterns.py`
   - Purpose: Scans all CSVs and computes, for every column with a `pattern` in `SCHEMA.json`, how many non-empty values match vs. do not match, yielding a hit rate per column.
@@ -45,8 +55,10 @@ Last updated: 2025-09-15
       - `--dataset-path datasets/MIMIC_5.3`
       - Options:
         - `--strict-nulls`: treat `NULL/NA/NAN/NONE` (case-insensitive) as NULL and ignore.
-        - `--format tsv|json`: output format (default tsv).
+        - `--format tsv|csv|json`: output format (default tsv).
   - Output columns (tsv): `dataset`, `table`, `column`, `total_non_empty`, `matches`, `mismatches`, `hit_rate`, `pattern`.
+  - CSV output contains the same header/columns, comma-delimited.
+  - Semantics: If a column has zero non-empty values, `hit_rate` is reported as `1.0` (trivially satisfied).
   - Notes: Processes entire files row-by-row; running on large tables (e.g., `measurement.csv`) is compute-intensive.
   - Implementation note: Minimal invocation auto-resolves `derived/MIMIC_5.3/SCHEMA.json` and `datasets/MIMIC_5.3`.
 

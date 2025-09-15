@@ -14,6 +14,10 @@ Usage examples:
 Outputs TSV to stdout by default with columns:
   dataset\ttable\tcolumn\ttotal_non_empty\tmatches\tmismatches\thit_rate\tpattern
 
+Use --format csv to emit CSV with the same columns.
+
+Hit-rate semantics: when a column has zero non-empty values, hit_rate is reported as 1.0 (trivially satisfied).
+
 Notes:
   - Only columns with a "pattern" in SCHEMA.json are evaluated.
   - Values are stripped of surrounding whitespace prior to evaluation.
@@ -157,9 +161,9 @@ def main(argv: Optional[List[str]] = None) -> int:
     )
     ap.add_argument(
         "--format",
-        choices=["tsv", "json"],
+        choices=["tsv", "csv", "json"],
         default="tsv",
-        help="Output format (default: tsv)",
+        help="Output format: tsv (default), csv, or json",
     )
     ap.add_argument(
         "--strict-nulls",
@@ -190,7 +194,8 @@ def main(argv: Optional[List[str]] = None) -> int:
         for col, (total, matches, mismatches) in counts.items():
             # If a column was not present in the CSV, total will be 0
             pattern = col_patterns[col].pattern
-            hit_rate = (matches / total) if total > 0 else 0.0
+            # Hit-rate: treat zero non-empty as trivially satisfied (1.0)
+            hit_rate = (matches / total) if total > 0 else 1.0
             results.append(
                 {
                     "dataset": dataset_id,
@@ -208,6 +213,30 @@ def main(argv: Optional[List[str]] = None) -> int:
     if args.format == "json":
         json.dump(results, sys.stdout, ensure_ascii=False)
         sys.stdout.write("\n")
+    elif args.format == "csv":
+        writer = csv.writer(sys.stdout)
+        # CSV header
+        writer.writerow([
+            "dataset",
+            "table",
+            "column",
+            "total_non_empty",
+            "matches",
+            "mismatches",
+            "hit_rate",
+            "pattern",
+        ])
+        for r in results:
+            writer.writerow([
+                str(r["dataset"]),
+                str(r["table"]),
+                str(r["column"]),
+                str(r["total_non_empty"]),
+                str(r["matches"]),
+                str(r["mismatches"]),
+                f"{r['hit_rate']:.6f}",
+                str(r["pattern"]),
+            ])
     else:
         # TSV header
         print(
