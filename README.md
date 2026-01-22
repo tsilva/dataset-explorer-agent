@@ -1,11 +1,11 @@
 <div align="center">
-  <img src="logo.png" alt="dataset-explorer-agent" width="512"/>
+  <img src="logo.png" alt="dataset-explorer-agent" width="512" />
 
   [![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
   [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
   [![No Dependencies](https://img.shields.io/badge/dependencies-none-brightgreen.svg)](#)
 
-  **Validate dataset schemas with regex pattern hit-rate analysis - zero dependencies, instant results**
+  **🔍 Validate dataset schemas with regex pattern hit-rate analysis — zero dependencies, instant results ⚡**
 
   [Quick Start](#quick-start) · [Usage](#usage) · [Schema Format](#schema-format)
 </div>
